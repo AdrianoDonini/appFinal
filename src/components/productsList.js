@@ -2,12 +2,12 @@ import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
  
-export default function PrductsList({ data, deleteItem, editItem }){
+export default function ProductsList({ data, deleteItem, editItem }){
   return(
 <View style={styles.container}>
     <Text style={styles.text}>Nome: {data.nome}</Text>
-    <Text style={styles.text}>Autor {data.descricao}</Text>
-    <Text style={styles.text}>Editora: {data.preco}</Text>
+    <Text style={styles.text}>Marca: {data.marca}</Text>
+    <Text style={styles.text}>Preço: {data.preco}</Text>
     <View style={styles.item}>
         <TouchableOpacity onPress={()=> deleteItem(data.key)}>
         <Icon name="trash" color="#A52A2A" size={20}>Excluir</Icon>

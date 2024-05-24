@@ -1,8 +1,9 @@
 import { addDoc, collection, getDocs } from "firebase/firestore"; 
 import db from "../services/firebase";
-import { Button, View,Text,StyleSheet, TouchableOpacity} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Keyboard, FlatList, ActivityIndicator, Button, Pressable} from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import { TextInput } from 'react-native-paper';
+import ProductsList from "./productsList";
 
 const Separator = () => {
   return <View style={StyleSheet.separator} />
@@ -14,6 +15,9 @@ const [nome, setNome] = useState("");
 const [descricao, setDescricao] = useState("");
 const [marca, setMarca] = useState("");
 const [preco, setPreco] = useState("");
+const [products, setProducts] = useState([]);
+const [loading, setLoading] =  useState(true);
+let [telaCadastro, setTelaCadastro] = useState(false);
     async function Cadastrar(){
         try {
             const docRef = await addDoc(collection(db, "products"), {
@@ -29,75 +33,92 @@ const [preco, setPreco] = useState("");
           }
     }
 
-    
-    async function Listar(){
-        console.log("Listar");
-    const querySnapshot = await getDocs(collection(db, "products"));
-    querySnapshot.forEach((doc) => {
-     
-      console.log(doc.data);
-      
-    })
-    }
+    useEffect(() => {
+        async function Listar(){
+            console.log("Listar");
+        const querySnapshot = await getDocs(collection(db, "products"));
+        querySnapshot.forEach((doc) => {
+        const produtos = {
+            key:doc.id,
+            nome: doc.data().nome,
+            descricao: doc.data().descricao,
+            marca: doc.data().marca,
+            preco: doc.data().preco
+
+        }
+        setProducts(oldArray => [...oldArray, produtos].reverse());
+        });
+        setLoading(false);
+        console.log("Data Array"+dataArray);
+        console.log("Products"+products);
+        }
+        Listar();
+    }, []);
     return(
-      <View style={styles.container}>
+        telaCadastro ? 
+        (
 
-        <TextInput
-            placeholder="Nome do Produto"
-            left={<TextInput.Icon icon="book-open" />}
-            maxLength={40}
-            style={styles.input}
-            onChangeText={(texto) => setNome(texto)}
-            
-        />
-        <TextInput
-            placeholder="Descrição do Produto"
-            left={<TextInput.Icon icon="book-open" />}
-            maxLength={40}
-            style={styles.input}
-            onChangeText={(texto) => setDescricao(texto)}
-            
-        />
-        <TextInput
-            placeholder="Descrição do Produto"
-            left={<TextInput.Icon icon="book-open" />}
-            maxLength={40}
-            style={styles.input}
-            onChangeText={(texto) => setMarca(texto)}
-            
-        />
-        <TextInput
-            placeholder="Descrição do Produto"
-            left={<TextInput.Icon icon="book-open" />}
-            maxLength={40}
-            style={styles.input}
-            onChangeText={(texto) => setPreco(texto)}
-            
-        />
-        <Separator />
-            <TouchableOpacity onPress={Cadastrar} style={styles.button} activeOpacity={0.5}>
-                <Text style={styles.buttonTextStyle}>Cadastrar</Text>
-            </TouchableOpacity>
-            <View style={styles.listar}>
-                <View style={styles.flatList}>
-                        {loading ?
-                                (<ActivityIndicator color="#121212" size={45} />) :
-                                (<FlatList
-                                        keyExtractor={item => item.key}
-                                        data={products}
-                                        renderItem={({ item }) => (
-                                                <ListProd data={item} deleteItem={() => handleDeleteItem(item.key)}
-                                                editItem={handleEdit} />
-                                        )}
-                                    />
-                                )
-                            }
-                </View>
+            <View style={styles.container}>
+
+                <TextInput
+                    placeholder="Nome do Produto"
+                    left={<TextInput.Icon icon="book-open" />}
+                    maxLength={40}
+                    style={styles.input}
+                    onChangeText={(texto) => setNome(texto)}
+                    
+                />
+                <TextInput
+                    placeholder="Descrição do Produto"
+                    left={<TextInput.Icon icon="book-open" />}
+                    maxLength={40}
+                    style={styles.input}
+                    onChangeText={(texto) => setDescricao(texto)}
+                    
+                />
+                <TextInput
+                    placeholder="Marca"
+                    left={<TextInput.Icon icon="book-open" />}
+                    maxLength={40}
+                    style={styles.input}
+                    onChangeText={(texto) => setMarca(texto)}
+                    
+                />
+                <TextInput
+                    placeholder="Preço"
+                    left={<TextInput.Icon icon="book-open" />}
+                    maxLength={40}
+                    style={styles.input}
+                    onChangeText={(texto) => setPreco(texto)}
+                    
+                />
+                <Separator />
+                    <TouchableOpacity onPress={Cadastrar} style={styles.button} activeOpacity={0.5}>
+                        <Text style={styles.buttonTextStyle}>Cadastrar</Text>
+                    </TouchableOpacity> 
             </View>
-      </View>
-
-      
-      
+        )
+            :
+            (
+                <View style={styles.listar}>
+                    <Pressable onPress={setTelaCadastro(true)}>
+                        <Text>Novo Produto</Text>
+                    </Pressable>
+                    <View style={styles.flatList}>
+                            {loading ?
+                                    (<ActivityIndicator color="#121212" size={45} />) :
+                                    (<FlatList
+                                            keyExtractor={item => item.key}
+                                            data={products}
+                                            renderItem={({ item }) => (
+                                                    <ProductsList data={item} deleteItem={() => handleDeleteItem(item.key)}editItem={handleEdit}/>
+                                            )}
+                                        />
+                                    )
+                                }
+                    </View>
+                </View>
+            )
     )
     
     
