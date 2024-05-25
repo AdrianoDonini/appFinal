@@ -25,13 +25,11 @@ export default function ProductsList({ data, deleteItem, editItem }){
 const styles = StyleSheet.create({
   container:{
     flex:1,
-    marginTop: 10,
+    marginTop: 1,
     marginBottom: 5,
-    width:"80vw",
+    width:"95vw",
     padding: 10,
     backgroundColor: '#fff',
-    marginRight: 5,
-    borderRadius:8,
   },
   text:{
     color:'black',

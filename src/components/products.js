@@ -1,9 +1,11 @@
-import { addDoc, collection, getDocs } from "firebase/firestore"; 
+import { addDoc, collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore"; 
 import db from "../services/firebase";
 import { View, Text, StyleSheet, TouchableOpacity, Keyboard, FlatList, ActivityIndicator, Button, Pressable} from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import { TextInput } from 'react-native-paper';
 import ProductsList from "./productsList";
+import { Dialog } from 'react-native-simple-dialogs';
+
 
 const Separator = () => {
   return <View style={StyleSheet.separator} />
@@ -18,6 +20,10 @@ const [preco, setPreco] = useState("");
 const [products, setProducts] = useState([]);
 const [loading, setLoading] =  useState(true);
 const [telaListar, setTelaListar] = useState(true);
+const [key, setKey] = useState('');
+const [toEdit, setToEdit] = useState(false);
+const [keytoDelet ,setKeytoDelet] = useState('');
+const [showDialog,setShowDialog] = useState(false);
     async function Cadastrar(){
         try {
             const docRef = await addDoc(collection(db, "products"), {
@@ -26,11 +32,7 @@ const [telaListar, setTelaListar] = useState(true);
               marca: marca,
               preco: preco
             });
-            setNome("");
-            setDescricao("");
-            setMarca("");
-            setPreco("");
-
+            clearData();
             
             setProducts(prevProducts => [{
                 key: docRef.id,
@@ -46,7 +48,60 @@ const [telaListar, setTelaListar] = useState(true);
             console.error("Error adding document: ", e);
         }
         setTelaListar(true);
-    };
+    }
+
+async function Editar(){
+    console.log(nome);
+    console.log(descricao);
+    console.log(marca);
+    console.log(preco);
+    
+    try {
+        const docRef = doc(db, "products", key) 
+        await setDoc(docRef, {
+                nome:nome,
+                descricao: descricao,
+                marca: marca,
+                preco: preco
+            });
+            clearData();
+
+
+            const index = products.indexOf(docRef.id);
+            products.splice(index, 1);
+            setProducts(prevProducts => [{
+                key: docRef.id,
+                nome: nome,
+                descricao: descricao,
+                marca: marca,
+                preco: preco
+            }, ...prevProducts]);
+
+       
+            await Listar();
+        
+        } catch (e) {
+            console.error("Error adding document: ", e);
+        }
+        setTelaListar(true);
+}
+
+function clearData(){
+    setNome("");
+    setDescricao("");
+    setMarca("");
+    setPreco("");
+}
+
+function handleIdit(data) {
+    setToEdit(true);
+    setTelaListar(false);
+    setKey(data.key);
+    setNome(data.nome);
+    setDescricao(data.descricao);
+    setMarca(data.marca);
+    setPreco(data.preco);
+}
     const Listar = async () => {
         setLoading(true);
         const querySnapshot = await getDocs(collection(db, "products"));
@@ -68,6 +123,18 @@ const [telaListar, setTelaListar] = useState(true);
         Listar();
     }, []);
 
+    // função para setar o id que vai ser deletado e mostrar o dialogo de confirmação
+const handleDeleteItem = (key) => {
+    setKeytoDelet(key)
+    setShowDialog(true); 
+  };
+      //função para excluir um item 
+async function handleDelete(keytoDelet) {
+    await deleteDoc(doc(db, "products", keytoDelet));
+      setShowDialog(false);
+      setKeytoDelet(""); 
+  }
+
     return (
         telaListar ? ( <View style={styles.listar}>
                 <Pressable onPress={() => setTelaListar(false)}>
@@ -80,12 +147,29 @@ const [telaListar, setTelaListar] = useState(true);
                                         keyExtractor={item => item.key}
                                         data={products}
                                         renderItem={({ item }) => (
-                                                <ProductsList data={item} />//deleteItem={() => handleDeleteItem(item.key)}editItem={handleEdit}/>
+                                                <ProductsList data={item}  editItem={() => handleIdit(item)} deleteItem={() => handleDeleteItem(item.key)}/>//deleteItem={() => handleDeleteItem(item.key)}editItem={handleEdit}/>
                                         )}
                                     />
                                 )
                             }
                 </View>
+                    <Dialog
+                    visible={showDialog}
+                    onTouchOutside={() => setShowDialog(false)}
+                    title="Confirmar Exclusão"
+                    animationType="fade"
+                    contentStyle={{ alignItems: 'center', justifyContent: 'center' }}
+                    >
+                    
+                        <View>
+                            <Text>Deseja realmente excluir este item?</Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 20 }}>
+                            <Button title="Cancelar" onPress={() => setShowDialog(false)} />
+                            <Button title="Confirmar" onPress={() => {handleDelete(keytoDelet)}} />
+                            </View>
+                        
+                    </View>
+                </Dialog>
                         </View>) : ( <View style={styles.container}>
 
                 <TextInput
@@ -94,7 +178,7 @@ const [telaListar, setTelaListar] = useState(true);
                     maxLength={40}
                     style={styles.input}
                     onChangeText={(texto) => setNome(texto)}
-                    
+                    value={nome}
                 />
                 <TextInput
                     placeholder="Descrição do Produto"
@@ -102,7 +186,7 @@ const [telaListar, setTelaListar] = useState(true);
                     maxLength={100}
                     style={styles.input}
                     onChangeText={(texto) => setDescricao(texto)}
-                    
+                    value={descricao}
                 />
                 <TextInput
                     placeholder="Marca"
@@ -110,7 +194,7 @@ const [telaListar, setTelaListar] = useState(true);
                     maxLength={40}
                     style={styles.input}
                     onChangeText={(texto) => setMarca(texto)}
-                    
+                    value={marca}
                 />
                 <TextInput
                     placeholder="Preço"
@@ -118,12 +202,18 @@ const [telaListar, setTelaListar] = useState(true);
                     maxLength={40}
                     style={styles.input}
                     onChangeText={(texto) => setPreco(texto)}
-                    
+                    value={preco}
                 />
                 <Separator />
+                {toEdit ? (
+                    <TouchableOpacity onPress={Editar} style={styles.button} activeOpacity={0.5}>
+                        <Text style={styles.buttonTextStyle}>Salvar</Text>
+                    </TouchableOpacity>
+                ):(
                     <TouchableOpacity onPress={Cadastrar} style={styles.button} activeOpacity={0.5}>
                         <Text style={styles.buttonTextStyle}>Cadastrar</Text>
-                    </TouchableOpacity> 
+                    </TouchableOpacity>
+                )}
             </View>
          )
             
@@ -198,12 +288,10 @@ listar:{
 },
 flatList:{
     flex: 1,
-    width:"90%",
+    width:"100%",
     height:"auto",
-    backgroundColor:"gray",
     alignItems:"center",
     justifyContent:"center",
-    borderRadius: 10,
   },
 }); 
 
