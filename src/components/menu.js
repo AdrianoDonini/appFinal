@@ -25,9 +25,8 @@ function NotificationsScreen({ navigation }) {
 
 function ProductsScreen({ navigation }) {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <ProductManager/>
-    </View>
+    <ProductManager/>
+    
   );
 }
 

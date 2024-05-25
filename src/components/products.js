@@ -17,7 +17,7 @@ const [marca, setMarca] = useState("");
 const [preco, setPreco] = useState("");
 const [products, setProducts] = useState([]);
 const [loading, setLoading] =  useState(true);
-let [telaCadastro, setTelaCadastro] = useState(false);
+const [telaListar, setTelaListar] = useState(true);
     async function Cadastrar(){
         try {
             const docRef = await addDoc(collection(db, "products"), {
@@ -26,39 +26,67 @@ let [telaCadastro, setTelaCadastro] = useState(false);
               marca: marca,
               preco: preco
             });
-          
-            console.log("Document written with ID: ", docRef.id);
-          } catch (e) {
+            setNome("");
+            setDescricao("");
+            setMarca("");
+            setPreco("");
+
+            
+            setProducts(prevProducts => [{
+                key: docRef.id,
+                nome: nome,
+                descricao: descricao,
+                marca: marca,
+                preco: preco
+            }, ...prevProducts]);
+
+       
+            await Listar();
+        } catch (e) {
             console.error("Error adding document: ", e);
-          }
-    }
+        }
+        setTelaListar(true);
+    };
+    const Listar = async () => {
+        setLoading(true);
+        const querySnapshot = await getDocs(collection(db, "products"));
+        const produtos = [];
+        querySnapshot.forEach((doc) => {
+            produtos.push({
+                key: doc.id,
+                nome: doc.data().nome,
+                descricao: doc.data().descricao,
+                marca: doc.data().marca,
+                preco: doc.data().preco
+            });
+        });
+        setProducts(produtos.reverse());
+        setLoading(false);
+    };
 
     useEffect(() => {
-        async function Listar(){
-            console.log("Listar");
-        const querySnapshot = await getDocs(collection(db, "products"));
-        querySnapshot.forEach((doc) => {
-        const produtos = {
-            key:doc.id,
-            nome: doc.data().nome,
-            descricao: doc.data().descricao,
-            marca: doc.data().marca,
-            preco: doc.data().preco
-
-        }
-        setProducts(oldArray => [...oldArray, produtos].reverse());
-        });
-        setLoading(false);
-        console.log("Data Array"+dataArray);
-        console.log("Products"+products);
-        }
         Listar();
     }, []);
-    return(
-        telaCadastro ? 
-        (
 
-            <View style={styles.container}>
+    return (
+        telaListar ? ( <View style={styles.listar}>
+                <Pressable onPress={() => setTelaListar(false)}>
+                    <Text>Novo Produto</Text>
+                </Pressable>
+                <View style={styles.flatList}>
+                        {loading ?
+                                (<ActivityIndicator color="#121212" size={45} />) :
+                                (<FlatList
+                                        keyExtractor={item => item.key}
+                                        data={products}
+                                        renderItem={({ item }) => (
+                                                <ProductsList data={item} />//deleteItem={() => handleDeleteItem(item.key)}editItem={handleEdit}/>
+                                        )}
+                                    />
+                                )
+                            }
+                </View>
+                        </View>) : ( <View style={styles.container}>
 
                 <TextInput
                     placeholder="Nome do Produto"
@@ -71,7 +99,7 @@ let [telaCadastro, setTelaCadastro] = useState(false);
                 <TextInput
                     placeholder="Descrição do Produto"
                     left={<TextInput.Icon icon="book-open" />}
-                    maxLength={40}
+                    maxLength={100}
                     style={styles.input}
                     onChangeText={(texto) => setDescricao(texto)}
                     
@@ -97,31 +125,9 @@ let [telaCadastro, setTelaCadastro] = useState(false);
                         <Text style={styles.buttonTextStyle}>Cadastrar</Text>
                     </TouchableOpacity> 
             </View>
-        )
-            :
-            (
-                <View style={styles.listar}>
-                    <Pressable onPress={setTelaCadastro(true)}>
-                        <Text>Novo Produto</Text>
-                    </Pressable>
-                    <View style={styles.flatList}>
-                            {loading ?
-                                    (<ActivityIndicator color="#121212" size={45} />) :
-                                    (<FlatList
-                                            keyExtractor={item => item.key}
-                                            data={products}
-                                            renderItem={({ item }) => (
-                                                    <ProductsList data={item} deleteItem={() => handleDeleteItem(item.key)}editItem={handleEdit}/>
-                                            )}
-                                        />
-                                    )
-                                }
-                    </View>
-                </View>
-            )
+         )
+            
     )
-    
-    
 }
 const styles = StyleSheet.create({
 
